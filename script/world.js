@@ -20,7 +20,8 @@ var World = {
     BATTLEFIELD: 'F',
     SWAMP: 'M',
     CACHE: 'U',
-    EXECUTIONER: 'X'
+    EXECUTIONER: 'X',
+    UNIVERSITY: 'Z'
   },
   TILE_PROBS: {},
   LANDMARKS: {},
@@ -149,6 +150,8 @@ var World = {
     World.LANDMARKS[World.TILE.BATTLEFIELD] = { num: 5, minRadius: 18, maxRadius: World.RADIUS * 1.5, scene: 'battlefield', label:  _('A&nbsp;Battlefield')};
     World.LANDMARKS[World.TILE.SWAMP] = { num: 1, minRadius: 15, maxRadius: World.RADIUS * 1.5, scene: 'swamp', label:  _('A&nbsp;Murky&nbsp;Swamp')};
     World.LANDMARKS[World.TILE.EXECUTIONER] = { num: 1, minRadius: 28, maxRadius: 28, scene: 'executioner', 'label': _('A&nbsp;Ravaged&nbsp;Battleship')};
+    World.LANDMARKS[World.TILE.UNIVERSITY] = { num: 1, minRadius: 13, maxRadius: 14, scene: 'destroyed_university', 'label': _('University') }
+    /// Translator note: in the context of a institution of higher learning
 
     // Only add the cache if there is prestige data
     if($SM.get('previous.stores')) {
@@ -916,6 +919,7 @@ var World = {
   },
 
   die: function() {
+    //return /// useful for debugging stuff in the world so you can't die
     if(!World.dead) {
       World.dead = true;
       Engine.log('player death');
@@ -970,6 +974,11 @@ var World = {
       Fabricator.init();
       Notifications.notify(null, _('builder knows the strange device when she sees it. takes it for herself real quick. doesn’t ask where it came from.'));
       Engine.event('progress', 'fabricator');
+    }
+    if (World.state.university && !$SM.get('features.location.university')) {
+      University.init()
+      Notification.notify(null, _('builder seems excited about the university.'))
+      Engine.event('progress', 'university');
     }
     World.redeemBlueprints();
     World.state = null;

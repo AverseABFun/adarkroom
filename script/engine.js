@@ -67,6 +67,21 @@
         name: _('gastronome'),
         desc: _('restore more health when eating'),
         notify: _('learned to make the most of food')
+      },
+      'cooldown': {
+        name: _('decreased cooldown'),
+        desc: _('be quicker'),
+        notify: _('learned to move faster')
+      },
+      'worker_speed': {
+        name: _('increased worker speed'),
+        desc: _('get more work out of less effort'),
+        notify: _('learned to make the most of the efforts of workers')
+      },
+      'decreased_materials': {
+        name: _('decreased materials necessary'),
+        desc: _('make more out of less'),
+        notify: _('learned to make more out of less. cost of buildings -10%')
       }
     },
 
@@ -219,6 +234,7 @@
       Notifications.init();
       Events.init();
       Room.init();
+      Room.updateBuildButtons(); // to prevent weird things involving tooltips with multiple options
 
 
       if(typeof $SM.get('stores.wood') != 'undefined') {
@@ -232,6 +248,9 @@
       }
       if($SM.get('features.location.spaceShip')) {
         Ship.init();
+      }
+      if ($SM.get('features.location.university')) {
+        University.init();
       }
 
       if($SM.get('config.lightsOff', true)){

@@ -164,7 +164,8 @@ Events.Setpieces = {
 			'a3': {
 				text: [
 					_('the remains of an old camp sits just inside the cave.'),
-					_('bedrolls, torn and blackened, lay beneath a thin layer of dust.')
+					_('bedrolls, torn and blackened, lay beneath a thin layer of dust.'),
+					_('everything seems to be slowly sinking into some clay.')
 				],
 				loot: {
 					'cured meat': {
@@ -181,6 +182,11 @@ Events.Setpieces = {
 						min: 1,
 						max: 5,
 						chance: 0.3
+					},
+					'clay': {
+						min: 2,
+						max: 8,
+						chance: 1
 					}
 				},
 				buttons: {
@@ -201,7 +207,7 @@ Events.Setpieces = {
 					_('the body of a wanderer lies in a small cavern.'),
 					_("rot's been to work on it, and some of the pieces are missing."),
                     /// TRANSLATORS : 'it' is a rotting wanderer's body
-					_("can't tell what left it here.")
+					_("can't tell what left it here in this clay."),
 				],
 				loot: {
 					'iron sword': {
@@ -223,6 +229,11 @@ Events.Setpieces = {
 					min: 1,
 					max: 2,
 					chance: 0.1
+					},
+					'clay': {
+						min: 2,
+						max: 6,
+						chance: 1
 					}
 				},
 				buttons: {
@@ -424,6 +435,11 @@ Events.Setpieces = {
 						min: 5,
 						max: 10,
 						chance: 0.5
+					},
+					'clay': {
+						min: 3,
+						max: 9,
+						chance: 0.8
 					}
 				},
 				buttons: {
@@ -545,8 +561,15 @@ Events.Setpieces = {
 			'a1': {
 				text: [
 					_("where the windows of the schoolhouse aren't shattered, they're blackened with soot."),
-					_('the double doors creak endlessly in the wind.')
+					_('the double doors creak endlessly in the wind as a small amount of clay spills out the doors.')
 				],
+				loot: {
+					'clay': {
+						min: 1,
+						max: 2,
+						chance: 1
+					}
+				},
 				buttons: {
 					'enter': {
 						text: _('enter'),
@@ -752,6 +775,11 @@ Events.Setpieces = {
 					'medicine': {
 						min: 1,
 						max: 3,
+						chance: 0.1
+					},
+					'concrete': {
+						min: 1,
+						max: 2,
 						chance: 0.1
 					}
 				},
@@ -3459,10 +3487,17 @@ Events.Setpieces = {
 		scenes: {
 			'start': {
 				text: [
-					_('an old iron mine sits here, tools abandoned and left to rust.'),
+					_('an old iron mine sits here, tools abandoned and left to rust among the dirt and clay.'),
 					_('bleached bones are strewn about the entrance. many, deeply scored with jagged grooves.'),
 					_('feral howls echo out of the darkness.')
 				],
+				loot: {
+					'clay': {
+						min: 2,
+						max: 5,
+						chance: 0.9
+					}
+				},
 				notification: _('the path leads to an abandoned mine'),
 				buttons: {
 					'enter': {
@@ -3512,9 +3547,16 @@ Events.Setpieces = {
 			},
 			'cleared': {
 				text: [
-					_('the beast is dead.'),
+					_('the beast is dead. its body slowly starts to sink into the murky soft clay.'),
 					_('the mine is now safe for workers.')
 				],
+				loot: {
+					'clay': {
+						min: 2,
+						max: 7,
+						chance: 1
+					}
+				},
 				notification: _('the iron mine is clear of dangers'),
 				onLoad: function() {
 					World.drawRoad();
@@ -3583,5 +3625,55 @@ Events.Setpieces = {
 			}
 		},
 		audio: AudioLibrary.LANDMARK_DESTROYED_VILLAGE
+	},
+	"destroyed_university": {
+		title: _('A destroyed university'),
+		scenes: {
+			'start': {
+				text: [
+					/// TRANSLATORS : 'university' is in the context of an institution of higher learning
+					_('a old destroyed university sits here'),
+					_('it could probably be repaired with some materials')
+				],
+				/*onLoad: function() { // for debugging purposes only, messes with the keyboard input but not the touch input
+					World.drawRoad();
+					World.state.university = true;
+					World.markVisited(World.curPos[0], World.curPos[1]);
+					University.init();
+				},*/
+				/// TRANSLATORS : strong = heavy/overpowering
+				notification: _('a strong smell of old books hits you'),
+				buttons: {
+					'fix': {
+						text: _('repair the university'),
+						cost: {'concrete': 10, 'wood': 1000},
+						nextScene: 'repair'
+					},
+					'leave': {
+						text: _('leave'),
+						nextScene: 'end'
+					}
+				}
+			},
+			'repair': {
+				text: [
+					_('after lots of work, wanderer university stands'),
+					_('with this so much more will be possible')
+				],
+				onLoad: function() {
+					World.drawRoad();
+					World.state.university = true;
+					World.markVisited(World.curPos[0], World.curPos[1]);
+					University.init();
+				},
+				buttons: {
+					'leave': {
+						text: _('leave'),
+						nextScene: 'end'
+					}
+				}
+			}
+		},
+		audio: AudioLibrary.LANDMARK_SULPHUR_MINE // TODO: Make good individual audio for the destoryed university
 	}
 };

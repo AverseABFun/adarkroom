@@ -165,6 +165,22 @@ var Room = {
 			},
 			audio: AudioLibrary.BUILD_ARMOURY
 		},
+		'composter': {
+			name: _('composter'),
+			button: null,
+			maximum: 1,
+			availableMsg: _("it'll be useful to turn stuff into clay"),
+			buildMsg: _("composter's done, welcoming stuff by turning it into clay."),
+			type: 'building',
+			cost: function () {
+				return {
+					'weak concrete': 1,
+					'cloth': 5,
+					'teeth': 5
+				};
+			},
+			audio: AudioLibrary.BUILD_ARMOURY // yet again need new sound
+		},
 		'torch': {
 			name: _('torch'),
 			button: null,
@@ -353,7 +369,53 @@ var Room = {
 				};
 			},
 			audio: AudioLibrary.CRAFT_RIFLE
-		}
+		},
+		'clay': {
+			name: _('large chunks of clay'),
+			type: 'good',
+			buildMsg: _('standard bits of clay'),
+			cost: function () {
+				return [
+					{
+						'coal': 2
+					},
+					{
+						'cloth': 2
+					},
+					{
+						'fur': 2
+					},
+					{
+						'scales': 2
+					}
+				]
+			},
+			audio: AudioLibrary.CRAFT_CASK // once again, someone make some audio specifically for this
+		},
+		'weak concrete': {
+			name: _('large and weak concrete blocks'),
+			type: 'good',
+			buildMsg: _('clay and some water poured into molds and let harden'),
+			cost: function () {
+				return {
+					'clay': 40
+				}
+			},
+			audio: AudioLibrary.CRAFT_CASK // once again, someone make some audio specifically for this
+		},
+		'concrete': {
+			name: _('large concrete blocks'),
+			type: 'good',
+			buildMsg: _('clay. some steel rebar. a bit of water. all poured into molds and let harden.'),
+			cost: function () {
+				return {
+					'clay': 20,
+					'weak concrete': 1,
+					'steel': 10
+				}
+			},
+			audio: AudioLibrary.CRAFT_CASK // once again, someone make some audio specifically for this
+ 		}
 	},
 
 	TradeGoods: {
@@ -481,6 +543,31 @@ var Room = {
 				};
 			},
 			audio: AudioLibrary.BUY_COMPASS
+		},
+		'concrete': {
+			name: _('large concrete blocks'),
+			type: 'good', // is a tool so they can be taken on expeditions for the university
+			cost: function () {
+				return {
+					'fur': 1000,
+					'scales': 500,
+					'teeth': 350,
+					'wood': 2000
+				}
+			},
+			audio: AudioLibrary.BUY_CASK // once again, someone make some audio specifically for this
+ 		},
+		'clay': {
+			type: 'good',
+			cost: function () { // these values are chosen so that it is cheaper to buy concrete blocks over buying enough clay
+				return {
+					'fur': 50,
+					'scales': 20,
+					'teeth': 12,
+					'wood': 100
+				}
+			},
+			audio: AudioLibrary.BUY_CASK // yet again, someone make some audio specifically for this
 		}
 	},
 
@@ -1027,14 +1114,44 @@ var Room = {
 		}
 
 		var storeMod = {};
-		var cost = craftable.cost();
-		for (var k in cost) {
-			var have = $SM.get('stores["' + k + '"]', true);
-			if (have < cost[k]) {
-				Notifications.notify(Room, _("not enough " + k));
+		var costs = craftable.cost();
+		if (Array.isArray(costs)) {
+			var cantBuy = false
+			for (var cost of costs) {
+				cantBuy = false
+				for (var k in cost) {
+					if ($SM.hasPerk('decreased_materials') && craftable.type == 'building') {
+						cost[k] = cost[k]*0.9
+					}
+					var have = $SM.get('stores["' + k + '"]', true);
+					if (have < cost[k]) {
+						cantBuy = true
+						break;
+					} else {
+						storeMod[k] = have - cost[k];
+					}
+				}
+				if (!cantBuy) {
+					break
+				}
+			}
+			if (cantBuy) {
+				Notifications.notify(Room, _("not enough materials"));
 				return false;
-			} else {
-				storeMod[k] = have - cost[k];
+			}
+		} else {
+			var cost = costs;
+			for (var k in cost) {
+				if ($SM.hasPerk('decreased_materials') && craftable.type == 'building') {
+					cost[k] = cost[k]*0.9
+				}
+				var have = $SM.get('stores["' + k + '"]', true);
+				if (have < cost[k]) {
+					Notifications.notify(Room, _("not enough " + k));
+					return false;
+				} else {
+					storeMod[k] = have - cost[k];
+				}
 			}
 		}
 		$SM.setM('stores', storeMod);
@@ -1064,6 +1181,7 @@ var Room = {
 				AudioEngine.playSound(AudioLibrary.BUILD);
 				break;
 		}
+		Room.updateBuildButtons();
 	},
 
 	needsWorkshop: function (type) {
@@ -1077,20 +1195,46 @@ var Room = {
 		if ($SM.get('game.builder.level') < 4) return false;
 		var craftable = Room.Craftables[thing];
 		if (Room.needsWorkshop(craftable.type) && $SM.get('game.buildings["' + 'workshop' + '"]', true) === 0) return false;
-		var cost = craftable.cost();
+		var costs = craftable.cost();
 
 		//show button if one has already been built
 		if ($SM.get('game.buildings["' + thing + '"]') > 0) {
 			Room.buttons[thing] = true;
 			return true;
 		}
-		// Show buttons if we have at least 1/2 the wood, and all other components have been seen.
-		if ($SM.get('stores.wood', true) < cost['wood'] * 0.5) {
+		if (thing == 'clay' && $SM.get('game.buildings["composter"]') > 0) {
+			return true;
+		} else if (thing == 'clay') {
 			return false;
 		}
-		for (var c in cost) {
-			if (!$SM.get('stores["' + c + '"]')) {
+		if (Array.isArray(costs)) {
+			var unlocked = false
+			for (var cost in costs) {
+					// Show buttons if we have at least 1/2 the wood, and all other components have been seen.
+					if ($SM.get('stores.wood', true) < cost['wood'] * 0.5 * ($SM.hasPerk('decreased_materials') ? 0.9 : 1)) {
+						continue;
+					}
+					for (var c in cost) {
+						if (!$SM.get('stores["' + c + '"]')) {
+							continue;
+						}
+					}
+					unlocked = true
+					break
+			}
+			if (!unlocked) {
 				return false;
+			}
+		} else {
+			var cost = costs
+			// Show buttons if we have at least 1/2 the wood, and all other components have been seen.
+			if ($SM.get('stores.wood', true) < cost['wood'] * 0.5 * ($SM.hasPerk('decreased_materials') ? 0.9 : 1)) {
+				return false;
+			}
+			for (var c in cost) {
+				if (!$SM.get('stores["' + c + '"]')) {
+					return false;
+				}
 			}
 		}
 
@@ -1155,11 +1299,27 @@ var Room = {
 				// refresh the tooltip
 				var costTooltip = $('.tooltip', craftable.button);
 				costTooltip.empty();
-				var cost = craftable.cost();
-				for (var c in cost) {
-					$("<div>").addClass('row_key').text(_(c)).appendTo(costTooltip);
-					$("<div>").addClass('row_val').text(cost[c]).appendTo(costTooltip);
+				var costs = craftable.cost();
+				if (Array.isArray(costs)) {
+					for (var i in costs) {
+						var cost = costs[i]
+						for (var c in cost) {
+							$("<div>").addClass('row_key').text(_(c)).appendTo(costTooltip);
+							$("<div>").addClass('row_val').text(cost[c]).appendTo(costTooltip);
+						}
+						if (i<costs.length-1) {
+							$("<br>").appendTo(costTooltip);
+							$("<div>").addClass('row_key').text(_('OR')).appendTo(costTooltip);
+						}
+					}
+				} else {
+					var cost = costs
+					for (var c in cost) {
+						$("<div>").addClass('row_key').text(_(c)).appendTo(costTooltip);
+						$("<div>").addClass('row_val').text(cost[c]).appendTo(costTooltip);
+					}
 				}
+				
 				if (max && !craftable.button.hasClass('disabled')) {
 					Notifications.notify(Room, craftable.maxMsg);
 				}
